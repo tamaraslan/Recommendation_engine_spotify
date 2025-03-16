@@ -95,8 +95,8 @@ Additionally, a random baseline is implemented for comparison. The application a
 2. **Add the following lines** to your `.env` file:
 
    ```bash
-   SPOTIFY_CLIENT_ID=09bbf582781648f3ae487bab1fecde0a
-   SPOTIFY_CLIENT_SECRET=2690ab2c825b442cb6a4e4a65e4668ec
+   SPOTIFY_CLIENT_ID=[YOUR API KEY]
+   SPOTIFY_CLIENT_SECRET=[YOUR API KEY]
    ```
 
 3. **Ensure `.env` is ignored** by Git by confirming your `.gitignore` includes:
