@@ -16,7 +16,10 @@ from evaluation import (
     evaluate_recommender_topN_random,
     mega_evaluation
 )
-from spotify_images import get_spotify_artist_image
+from spotify_images import get_spotify_artist_image, get_spotify_artist_top_tracks
+
+# Import our new function
+from spotify_styled_display import display_spotify_styled_recommendation
 
 st.set_page_config(
     page_title="Spotify recommendation system",
@@ -25,14 +28,14 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Graphic for web interface
-
 custom_css = """
 <style>
 [data-testid="stAppViewContainer"]{
-background-color : #191414;
+  background-color : #191414;
 }
-#MainMenu, footer {visibility: hidden;}
+#MainMenu, footer {
+  visibility: hidden;
+}
 .block-container {
   margin-top: 1em;
   margin-bottom: 5em;
@@ -101,16 +104,14 @@ h1, h2, h3, h4, h5, h6 {
 st.markdown(custom_css, unsafe_allow_html=True)
 
 def main():
-
-    # Header Spotify
-
+    # Header
     st.markdown(
         """
-        <div style='background-color: #000000; padding: 1em 1em; display: flex; align-items: center; margin:10px; 
-        border-radius:30px;'>
-          <img src='https://upload.wikimedia.org/wikipedia/commons/2/26/Spotify_logo_with_text.svg'
-               style='height: 40px; margin-right: 1em;' />
-          <h2 style='margin: 0;'>Recommendation engine</h2>
+        <div style="background-color: #000000; padding: 1em 1em; display: flex; align-items: center; margin:10px; 
+        border-radius:30px;">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Spotify_logo_with_text.svg"
+               style="height: 40px; margin-right: 1em;" />
+          <h2 style="margin: 0;">Recommendation engine</h2>
         </div>
         """,
         unsafe_allow_html=True
@@ -118,16 +119,11 @@ def main():
 
     col_menu, col_main = st.columns([2, 8], gap="small")
 
-    # Left Menu
-
     with col_menu:
-
-        # To make it look good, reproduction of spotify menu
-
         st.write("")
         st.markdown("<h3 style='color:#1DB954;background-color:#000000;border-radius:30px;'>Menu</h3>", unsafe_allow_html=True)
         st.markdown("""
-        <ul style="list-style:none; padding-left:0; line-height:1.8;background-color:#000000;border-radius:30px;">
+        <ul style="list-style:none; padding-left:0; line-height:1.8; background-color:#000000; border-radius:30px;">
           <li><a href="#" style="color:white; text-decoration:none;">Home</a></li>
           <li><a href="#" style="color:white; text-decoration:none;">Research</a></li>
           <li><a href="#" style="color:white; text-decoration:none;">Your library</a></li>
@@ -140,50 +136,48 @@ def main():
         """, unsafe_allow_html=True)
         st.write("---")
 
-        # Setting the data and put the name and path
-
+        # Loading data
         st.subheader("Settings")
         artists_path = st.text_input("Path to artists.dat", "data/artists_gp3.dat")
         user_artists_path = st.text_input("Path to user_artists.dat", "data/user_artists_gp3.dat")
 
         if st.button("Load and preprocess"):
             try:
-                user_artists_scaled, user_artists_top, artist_id_to_name = load_and_transform_data(artists_path, user_artists_path)
+                user_artists_scaled, user_artists_top, artist_id_to_name = load_and_transform_data(
+                    artists_path, user_artists_path
+                )
                 st.session_state["user_artists_scaled"] = user_artists_scaled
                 st.session_state["user_artists_top"] = user_artists_top
                 st.session_state["artist_id_to_name"] = artist_id_to_name
                 st.session_state["all_users"] = list(user_artists_scaled.index)
                 st.session_state["user_to_idx"] = {u: i for i, u in enumerate(st.session_state["all_users"])}
-                st.success("Data load and preprocess successfully !")
-                st.write("Dimension DataFrame :", user_artists_scaled.shape)
+                st.success("Data load and preprocess successfully!")
+                st.write("Dimension DataFrame:", user_artists_scaled.shape)
             except Exception as e:
-                st.error(f"Error : {e}")
-
-        # Settings of the engines
+                st.error(f"Error: {e}")
 
         if "user_artists_scaled" in st.session_state:
-            st.subheader("Recommendations ")
+            st.subheader("Recommendations")
             k_neighbors = st.slider("Number of neighbours (k)", 1, 50, 10)
             n_items = st.slider("Number of recommended artist", 1, 20, 5)
             st.subheader("Evaluation")
             given = st.slider("Hidden Artists (given)", 1, 20, 5)
             sample_users = st.slider("Users Sample", 10, 300, 100)
 
-        # Right column display all recommendation
-
     with col_main:
         st.subheader("Recommendation (unmasked)")
+
+        # Check data loaded
         if "user_artists_scaled" in st.session_state:
             all_users = st.session_state["all_users"]
             if all_users:
-                selected_user = st.selectbox("Choose an user :", all_users)
+                selected_user = st.selectbox("Choose a user:", all_users)
             else:
                 st.warning("No available user.")
                 return
 
-            # Launch the recommendation engine
-
             if st.button("Show recommendations"):
+                # Popularity approach
                 st.markdown("### Popularity (filtered)")
                 pop_list = popularity_recommender_filtered(
                     st.session_state["user_artists_top"],
@@ -191,23 +185,27 @@ def main():
                     selected_user,
                     n=n_items
                 )
-                pop_cards_html = "<div class='horizontal-scroller'>"
+                if pop_list:
+                    for i, artist_id in enumerate(pop_list, start=1):
+                        artist_name = st.session_state["artist_id_to_name"].get(artist_id, "Unknown artist")
+                        cover_url = get_spotify_artist_image(artist_name)
+                        sub_info = f"Vidéo • Titre • {artist_name}"
+                        top_tracks = get_spotify_artist_top_tracks(artist_name)
+                        track_list = [(t, "3:30") for t in top_tracks]  # placeholders
 
-                # Display of the recommendation on card with our POPULARITY model, and link with the api of Spotify for
-                # display pictures
+                        display_spotify_styled_recommendation(
+                            block_title=f"Recommended Artist #{i} (Popularity)",
+                            artist_name=artist_name,
+                            cover_url=cover_url,
+                            sub_info=sub_info,
+                            track_list=track_list,
+                            block_height=300
+                        )
+                else:
+                    st.warning("No popularity-based recommendations found.")
 
-                for artist_id in pop_list:
-                    name = st.session_state["artist_id_to_name"].get(artist_id, "Unknown artist")
-                    artist_img = get_spotify_artist_image(name)
-                    pop_cards_html += (
-                        "<div class='card'>"
-                        f"<img src='{artist_img}' />"
-                        f"<p>{artist_id}<br><strong>{name}</strong></p>"
-                        "</div>"
-                    )
-                pop_cards_html += "</div>"
-                st.markdown(pop_cards_html, unsafe_allow_html=True)
-
+                # UBCF approach
+                st.write("---")
                 st.markdown("### UBCF (classic)")
                 ubcf_list = ubcf_recommend_for_display(
                     st.session_state["user_artists_scaled"],
@@ -216,25 +214,26 @@ def main():
                     k=k_neighbors,
                     n=n_items
                 )
+                if ubcf_list:
+                    for i, artist_id in enumerate(ubcf_list, start=1):
+                        artist_name = st.session_state["artist_id_to_name"].get(artist_id, "Unknown artist")
+                        cover_url = get_spotify_artist_image(artist_name)
+                        sub_info = f"Vidéo • Titre • {artist_name}"
+                        top_tracks = get_spotify_artist_top_tracks(artist_name)
+                        track_list = [(t, "3:30") for t in top_tracks]
 
-                # Display of the recommendation on card with our UBCF model, and link with the api of Spotify for
-                # display pictures
+                        display_spotify_styled_recommendation(
+                            block_title=f"Recommended Artist #{i} (UBCF)",
+                            artist_name=artist_name,
+                            cover_url=cover_url,
+                            sub_info=sub_info,
+                            track_list=track_list,
+                            block_height=300
+                        )
+                else:
+                    st.warning("No UBCF-based recommendations found.")
 
-                ubcf_cards_html = "<div class='horizontal-scroller'>"
-                for artist_id in ubcf_list:
-                    name = st.session_state["artist_id_to_name"].get(artist_id, "Unknown artist")
-                    artist_img = get_spotify_artist_image(name)
-                    ubcf_cards_html += (
-                        "<div class='card'>"
-                        f"<img src='{artist_img}' />"
-                        f"<p>{artist_id}<br><strong>{name}</strong></p>"
-                        "</div>"
-                    )
-                ubcf_cards_html += "</div>"
-                st.markdown(ubcf_cards_html, unsafe_allow_html=True)
-
-            # Evaluation of our 3 models (POPULARITY / RANDOM / UBCF
-
+            # Evaluate
             if st.button("Evaluating models"):
                 prec_ubcf, recall_ubcf = evaluate_recommender_topN_ubcf(
                     user_artists_scaled=st.session_state["user_artists_scaled"],
@@ -257,12 +256,11 @@ def main():
                     sample_users=sample_users
                 )
                 st.markdown("### Models evaluation")
-                st.write(f"**UBCF** - Précision : {prec_ubcf:.3f} | Recall : {recall_ubcf:.3f}")
-                st.write(f"**Popularité** - Précision : {prec_pop:.3f} | Recall : {recall_pop:.3f}")
-                st.write(f"**Aléatoire** - Précision : {prec_rand:.3f} | Recall : {recall_rand:.3f}")
+                st.write(f"**UBCF** - Precision: {prec_ubcf:.3f} | Recall: {recall_ubcf:.3f}")
+                st.write(f"**Popularity** - Precision: {prec_pop:.3f} | Recall: {recall_pop:.3f}")
+                st.write(f"**Random** - Precision: {prec_rand:.3f} | Recall: {recall_rand:.3f}")
 
-            if st.button('"Mega" Models evaluation (10 iterations)'):
-                # Run 10 evaluations for each algorithm
+            if st.button("Mega Evaluation (10 iterations)"):
                 ubcf_list_vals, pop_list_vals, rand_list_vals = mega_evaluation(
                     st.session_state["user_artists_scaled"],
                     st.session_state["user_artists_top"],
@@ -272,7 +270,6 @@ def main():
                     k=k_neighbors,
                     iterations=10
                 )
-                # Prepare data for graphing
                 iterations = list(range(1, 11))
                 data = pd.DataFrame({
                     "Iteration": iterations,
@@ -280,28 +277,27 @@ def main():
                     "Popularity": pop_list_vals,
                     "Random": rand_list_vals
                 })
-                # Creating a graph with Altair
                 chart = alt.Chart(data.melt('Iteration', var_name='Model', value_name='Accuracy')).mark_line(point=True).encode(
                     x="Iteration:O",
-                    y="Accuracy :Q",
+                    y="Accuracy:Q",
                     color="Model:N"
                 ).properties(
-                    title="evolution of accuracy (10 iterations)"
+                    title="Evolution of accuracy (10 iterations)"
                 )
                 st.altair_chart(chart, use_container_width=True)
 
     st.markdown("""
-    <div style='position:fixed; left:0; bottom:0; width:100%; background-color:#181818; 
-                padding:0.7em; display:flex; align-items:center; justify-content:center; z-index:9999;'>
-      <div style='flex:1; margin-left:1em; color:#1DB954; font-weight:bold;'>
-        <button style='background:none; border:none; color:#1DB954; margin-right:0.5em;'>⏮️</button>
-        <button style='background:none; border:none; color:#1DB954; margin-right:0.5em;'>⏯️</button>
-        <button style='background:none; border:none; color:#1DB954;'>⏭️</button>
+    <div style="position:fixed; left:0; bottom:0; width:100%; background-color:#181818; 
+                padding:0.7em; display:flex; align-items:center; justify-content:center; z-index:9999;">
+      <div style="flex:1; margin-left:1em; color:#1DB954; font-weight:bold;">
+        <button style="background:none; border:none; color:#1DB954; margin-right:0.5em;">⏮️</button>
+        <button style="background:none; border:none; color:#1DB954; margin-right:0.5em;">⏯️</button>
+        <button style="background:none; border:none; color:#1DB954;">⏭️</button>
       </div>
-      <div style='flex:1; text-align:center; color:#1DB954;'>
+      <div style="flex:1; text-align:center; color:#1DB954;">
         Powered by RECOMIND Solutions
       </div>
-      <div style='flex:1;'></div>
+      <div style="flex:1;"></div>
     </div>
     """, unsafe_allow_html=True)
 
