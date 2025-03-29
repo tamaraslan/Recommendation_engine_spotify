@@ -30,74 +30,207 @@ st.set_page_config(
 
 custom_css = """
 <style>
-[data-testid="stAppViewContainer"]{
-  background-color : #191414;
+/* Base styles */
+[data-testid="stAppViewContainer"] {
+  background-color: #191414;
 }
+
 #MainMenu, footer {
   visibility: hidden;
 }
+
 .block-container {
-  margin-top: 1em;
-  margin-bottom: 5em;
+  margin-top: clamp(1em, 2vw, 2em);
+  margin-bottom: clamp(3em, 5vw, 5em);
+  padding: 0 clamp(1em, 3vw, 2em);
 }
+
 body {
   background-color: #121212 !important;
   color: #FFFFFF !important;
-  font-family: "Arial", sans-serif;
+  font-family: "Circular", -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.5;
 }
+
+/* Buttons */
 .stButton > button {
   background-color: #1DB954;
   color: white;
-  border-radius: 6px;
+  border-radius: 500px;
   border: none;
-  font-weight: 600;
-  padding: 0.6em 1em;
+  font-weight: 700;
+  padding: 0.8em 2em;
   margin: 0.5em 0;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.875rem;
 }
+
 .stButton > button:hover {
   background-color: #1ED760;
-  color: black;
+  transform: scale(1.04);
+  color: white;
 }
+
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
+
 ::-webkit-scrollbar-track {
-  background: #191414;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #1DB954;
+  border-radius: 4px;
+  transition: all 0.2s ease;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #1ED760;
 }
+
+/* Typography */
 h1, h2, h3, h4, h5, h6 {
   color: #1DB954;
-}
-.horizontal-scroller {
-  display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  gap: 1em;
+  letter-spacing: -0.04em;
   margin-bottom: 1em;
 }
+
+/* Card Grid */
+.horizontal-scroller {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: clamp(1em, 2vw, 1.5em);
+  margin-bottom: 2em;
+  padding: 1em;
+}
+
+@media (max-width: 768px) {
+  .horizontal-scroller {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+}
+
 .card {
-  flex: 0 0 auto;
-  width: 160px;
   background-color: #181818;
   border-radius: 8px;
   padding: 1em;
   text-align: center;
+  transition: background-color 0.3s ease;
+  cursor: pointer;
 }
+
+.card:hover {
+  background-color: #282828;
+}
+
 .card img {
   width: 100%;
+  aspect-ratio: 1;
   border-radius: 8px;
-  height: 160px;
   object-fit: cover;
+  transition: transform 0.3s ease;
 }
+
+.card:hover img {
+  transform: scale(1.05);
+}
+
+/* Columns */
 .stColumn {
-  background-color:#000000;
-  border-radius:30px;
-  padding:1em;
+  background-color: #000000;
+  border-radius: 16px;
+  padding: clamp(1em, 3vw, 2em);
+  transition: transform 0.3s ease;
+}
+
+.stColumn:hover {
+  transform: translateY(-4px);
+}
+
+/* Menu styling */
+.spotify-menu {
+  background-color: #000000;
+  border-radius: 16px;
+  padding: 1.5em;
+}
+
+.spotify-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.spotify-menu li {
+  margin: 0.5em 0;
+}
+
+.spotify-menu a {
+  color: #b3b3b3;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  padding: 0.5em;
+  border-radius: 4px;
+}
+
+.spotify-menu a:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Player bar */
+.player-bar {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background-color: #181818;
+  padding: 1em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 9999;
+  border-top: 1px solid #282828;
+}
+
+.player-controls {
+  display: flex;
+  gap: 1em;
+  align-items: center;
+}
+
+.player-button {
+  background: none;
+  border: none;
+  color: #1DB954;
+  font-size: 1.2em;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.player-button:hover {
+  transform: scale(1.1);
+  color: #1ED760;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .player-bar {
+    flex-direction: column;
+    gap: 1em;
+    padding: 0.8em;
+  }
+  
+  .block-container {
+    margin-bottom: 8em;
+  }
 }
 </style>
 """
@@ -162,7 +295,7 @@ def main():
             n_items = st.slider("Number of recommended artist", 1, 20, 5)
             st.subheader("Evaluation")
             given = st.slider("Hidden Artists (given)", 1, 20, 5)
-            sample_users = st.slider("Users Sample", 10, 300, 100)
+            sample_users = st.slider("Users Sample", 10, 900, 100)
 
     with col_main:
         st.subheader("Recommendation (unmasked)")
@@ -199,7 +332,7 @@ def main():
                             cover_url=cover_url,
                             sub_info=sub_info,
                             track_list=track_list,
-                            block_height=300
+                            block_height=350
                         )
                 else:
                     st.warning("No popularity-based recommendations found.")
@@ -228,37 +361,48 @@ def main():
                             cover_url=cover_url,
                             sub_info=sub_info,
                             track_list=track_list,
-                            block_height=300
+                            block_height=350
                         )
                 else:
                     st.warning("No UBCF-based recommendations found.")
 
             # Evaluate
-            if st.button("Evaluating models"):
-                prec_ubcf, recall_ubcf = evaluate_recommender_topN_ubcf(
-                    user_artists_scaled=st.session_state["user_artists_scaled"],
-                    n=n_items,
-                    given=given,
-                    sample_users=sample_users,
-                    k=k_neighbors
-                )
-                prec_pop, recall_pop = evaluate_recommender_topN_pop(
-                    user_artists_top=st.session_state["user_artists_top"],
-                    user_artists_scaled=st.session_state["user_artists_scaled"],
-                    n=n_items,
-                    given=given,
-                    sample_users=sample_users
-                )
-                prec_rand, recall_rand = evaluate_recommender_topN_random(
-                    user_artists_scaled=st.session_state["user_artists_scaled"],
-                    n=n_items,
-                    given=given,
-                    sample_users=sample_users
-                )
-                st.markdown("### Models evaluation")
-                st.write(f"**UBCF** - Precision: {prec_ubcf:.3f} | Recall: {recall_ubcf:.3f}")
-                st.write(f"**Popularity** - Precision: {prec_pop:.3f} | Recall: {recall_pop:.3f}")
-                st.write(f"**Random** - Precision: {prec_rand:.3f} | Recall: {recall_rand:.3f}")
+            if st.button("Evaluating models for n=[1, 3, 5, 10, 15, 20]"):
+                topNs = [1, 3, 5, 10, 15, 20]
+
+                st.markdown("### UBCF Evaluation for various top-N")
+                for topN in topNs:
+                    prec_ubcf, recall_ubcf, rmse_ubcf, mse_ubcf, mae_ubcf = evaluate_recommender_topN_ubcf(
+                        user_artists_scaled=st.session_state["user_artists_scaled"],
+                        n=topN,
+                        given=given,
+                        sample_users=sample_users,
+                        k=k_neighbors
+                    )
+                    st.write(
+                        f"Top-{topN} UBCF - Precision: {prec_ubcf:.3f} | Recall: {recall_ubcf:.3f} | RMSE: {rmse_ubcf:.3f} | MSE: {mse_ubcf:.3f} | MAE: {mae_ubcf:.3f}")
+
+                st.markdown("### Popularity Evaluation for various top-N")
+                for topN in topNs:
+                    prec_pop, recall_pop, rmse_pop, mse_pop, mae_pop = evaluate_recommender_topN_pop(
+                        user_artists_top=st.session_state["user_artists_top"],
+                        user_artists_scaled=st.session_state["user_artists_scaled"],
+                        n=topN,
+                        given=given,
+                        sample_users=sample_users
+                    )
+                    st.write(
+                        f"Top-{topN} Popularity - Precision: {prec_pop:.3f} | Recall: {recall_pop:.3f} | RMSE: {rmse_pop:.3f} | MSE: {mse_pop:.3f} | MAE: {mae_pop:.3f}")
+
+                st.markdown("### Random Baseline Evaluation (top-N)")
+                for topN in topNs:
+                    prec_rand, recall_rand = evaluate_recommender_topN_random(
+                        user_artists_scaled=st.session_state["user_artists_scaled"],
+                        n=topN,
+                        given=given,
+                        sample_users=sample_users
+                    )
+                    st.write(f"Top-{topN} Random - Precision: {prec_rand:.3f} | Recall: {recall_rand:.3f}")
 
             if st.button("Mega Evaluation (10 iterations)"):
                 ubcf_list_vals, pop_list_vals, rand_list_vals = mega_evaluation(
